@@ -1,0 +1,7 @@
+raw/
+dicom/
+nii/
+build/
+site/data/
+site/thumbs/
+tsweights/

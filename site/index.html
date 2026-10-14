@@ -1,0 +1,1083 @@
+<title>Open Imaging Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: reading-room console. Home = atlas index (area, modality, region cards).
+   Study = structure dock left, 2x2 film box centre, case card right. */
+:root {
+  --bg: #e9ecee; --panel: #f7f8f9; --panel-2: #dfe3e6; --line: #c5ccd2;
+  --fg: #1a2026; --muted: #5a6670; --accent: #1f6a86; --accent-ink: #ffffff;
+  --cross: #f0a92e; --film: #050607; --film-ink: #d7dde2;
+  --good: #2f7d4f; --bad: #b23b3b; --lesion: #36e0b0;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1114; --panel: #151b20; --panel-2: #1d252c; --line: #2b353e;
+    --fg: #e3e8ec; --muted: #8d9aa5; --accent: #5fb3d1; --accent-ink: #061218;
+    --good: #5cc28a; --bad: #e57373; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1114; --panel: #151b20; --panel-2: #1d252c; --line: #2b353e;
+  --fg: #e3e8ec; --muted: #8d9aa5; --accent: #5fb3d1; --accent-ink: #061218;
+  --good: #5cc28a; --bad: #e57373; color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.45 var(--f-body); padding-inline: 16px; padding-block: 0 16px; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; padding-block: 14px 10px; border-bottom: 1px solid var(--line); }
+.brand { font: 700 22px/1.1 var(--f-display); letter-spacing: .01em; margin: 0; cursor: pointer; background: none; border: 0; padding: 0; }
+.brand span { color: var(--accent); }
+.dataset { color: var(--muted); font-size: 12.5px; margin: 0; min-width: 0; }
+
+/* ---------- home ---------- */
+.home { display: grid; gap: 16px; padding-top: 16px; }
+.areas { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.area-tabs { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.area-tabs button { border: 0; background: var(--panel); padding: 8px 16px; cursor: pointer; font: 600 15px/1.2 var(--f-display); letter-spacing: .02em; }
+.area-tabs button + button { border-left: 1px solid var(--line); }
+.area-tabs button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.mods { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 13px; }
+.chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.intro { margin: 0; color: var(--muted); max-width: 75ch; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.card-s { display: grid; grid-template-rows: auto 1fr; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); overflow: hidden; cursor: pointer; padding: 0; }
+.card-s:hover { border-color: var(--accent); }
+.card-s img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; background: #000; }
+.card-s .body { padding: 10px 12px 12px; display: grid; gap: 4px; align-content: start; }
+.badge { justify-self: start; font: 600 10.5px/1 var(--f-display); letter-spacing: .09em; text-transform: uppercase; color: var(--accent); }
+.card-s h3 { margin: 0; font: 700 17px/1.2 var(--f-display); }
+.card-s p { margin: 0; color: var(--muted); font-size: 12.5px; }
+.facts { font: 500 11.5px var(--f-mono); color: var(--muted); }
+.empty { color: var(--muted); }
+
+/* ---------- workspace ---------- */
+.wsbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.wsbar h2 { margin: 0; font: 700 19px/1.1 var(--f-display); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.tgroup { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tlabel { font: 600 11px/1 var(--f-display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 5px 10px; cursor: pointer; font-size: 13px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+input[type=range] { width: 110px; accent-color: var(--accent); }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 5px 11px; cursor: pointer; font-size: 13px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.check { display: inline-flex; gap: 5px; align-items: center; font-size: 13px; cursor: pointer; }
+
+.layout { display: grid; grid-template-columns: 260px minmax(0, 1fr) 300px; gap: 14px; padding-top: 14px; align-items: start; }
+@media (max-width: 1150px) { .layout { grid-template-columns: 230px minmax(0, 1fr); } .card { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .layout { grid-template-columns: minmax(0, 1fr); } .index { order: 3; } .card { order: 2; } }
+.layout.noindex { grid-template-columns: minmax(0, 1fr) 300px; }
+@media (max-width: 760px) { .layout.noindex { grid-template-columns: minmax(0, 1fr); } }
+.index { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); display: flex; flex-direction: column; max-height: calc(100vh - 170px); min-height: 280px; }
+.index input[type=search] { margin: 10px; padding: 7px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); }
+.list { overflow-y: auto; padding: 0 4px 10px; min-height: 0; }
+.ghead { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 8px 4px; position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.ghead h3 { margin: 0; font: 600 11.5px/1 var(--f-display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.ghead label { font-size: 11.5px; color: var(--muted); display: flex; gap: 4px; align-items: center; cursor: pointer; }
+.sub { margin: 8px 8px 2px; font: italic 500 11.5px/1.2 var(--f-body); color: var(--muted); }
+.item { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; text-align: left; border: 0; background: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; }
+.item:hover { background: var(--panel-2); }
+.item[aria-current="true"] { background: var(--panel-2); box-shadow: inset 2px 0 var(--accent); }
+.item.off .nm { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+.sw { width: 12px; height: 12px; border-radius: 3px; }
+.nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hm { font: 500 11px var(--f-mono); color: var(--muted); }
+
+.films { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; background: var(--film); padding: 6px; border-radius: var(--r); }
+.films.single { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 460px) { .films { grid-template-columns: minmax(0, 1fr); } }
+.pane { position: relative; aspect-ratio: 1 / 1; max-width: 100%; background: #000; overflow: hidden; touch-action: none; border-radius: 3px; }
+.films.single .pane { aspect-ratio: 4 / 5; max-height: 78vh; }
+@media (pointer: coarse) { .pane[data-plane] { touch-action: pan-y; } }
+.pane canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+.pane.three canvas { cursor: grab; }
+.tag { position: absolute; pointer-events: none; color: var(--film-ink); font: 500 11.5px/1.2 var(--f-mono); background: rgba(0,0,0,.6); padding: 2px 5px; border-radius: 3px; }
+.tag:empty { display: none; }
+.tag.tl { top: 7px; left: 9px; font: 600 12px/1.2 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
+.tag.br { bottom: 7px; right: 9px; }
+.tag.bl { bottom: 7px; left: 9px; color: #9aa7b1; }
+.ori { position: absolute; pointer-events: none; color: var(--cross); font: 600 12px var(--f-mono); text-shadow: 0 0 3px #000, 0 1px 2px #000; }
+.ori.l { left: 6px; top: 50%; transform: translateY(-50%); }
+.ori.r { right: 6px; top: 50%; transform: translateY(-50%); }
+.ori.t { top: 6px; left: 50%; transform: translateX(-50%); }
+.ori.b { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.tip { position: absolute; pointer-events: none; background: #0b0f12e6; color: #eef2f5; border: 1px solid #36424c; border-radius: 4px; padding: 4px 7px; font-size: 12px; white-space: nowrap; transform: translate(12px, 12px); z-index: 2; }
+.pane-ctl { position: absolute; right: 8px; top: 6px; display: flex; gap: 6px; align-items: center; color: var(--film-ink); font-size: 11.5px; z-index: 2; }
+.pane-ctl input[type=range] { width: 80px; accent-color: var(--cross); }
+.pane-ctl .seg { border-color: #36424c; }
+.pane-ctl .seg button { background: #11171c; color: #cfd6dc; padding: 3px 8px; font-size: 11.5px; }
+.pane-ctl .seg button[aria-pressed="true"] { background: var(--cross); color: #111; }
+.hint { color: var(--muted); font-size: 12px; margin: 8px 2px 0; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--film-ink); font: 500 13px var(--f-mono); text-align: center; padding: 20px; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 12px; min-width: 0; }
+.card h2 { margin: 0; font: 700 20px/1.15 var(--f-display); text-wrap: balance; }
+.card h4 { margin: 4px 0 0; font: 600 12px/1 var(--f-display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.eyebrow { font: 600 11px/1 var(--f-display); text-transform: uppercase; letter-spacing: .09em; color: var(--accent); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; margin: 0; font-size: 13px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-family: var(--f-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.note { margin: 0; font-size: 13.5px; }
+.small { margin: 0; font-size: 12px; color: var(--muted); }
+.card ul { margin: 0; padding-left: 18px; font-size: 13px; display: grid; gap: 4px; }
+.readout { font: 500 12.5px var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; }
+.readout b { color: var(--fg); font-weight: 500; }
+.ltable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ltable th { text-align: left; font: 600 11px var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 4px 4px; border-bottom: 1px solid var(--line); }
+.ltable td { padding: 4px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.ltable td.n { font-family: var(--f-mono); text-align: right; }
+.ltable tr { cursor: pointer; }
+.ltable tr:hover td { background: var(--panel-2); }
+.ltable tr[aria-current="true"] td { background: var(--panel-2); box-shadow: inset 0 -1px var(--accent); }
+.scroll { overflow-x: auto; max-height: 260px; overflow-y: auto; }
+.quiz .choices { display: grid; gap: 6px; }
+.quiz .choices button { text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: var(--r); padding: 8px 10px; cursor: pointer; }
+.quiz .choices button:hover:not(:disabled) { border-color: var(--accent); }
+.quiz .choices button.right { border-color: var(--good); color: var(--good); font-weight: 600; }
+.quiz .choices button.wrong { border-color: var(--bad); color: var(--bad); }
+.score { font: 500 12.5px var(--f-mono); color: var(--muted); margin: 0; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+footer { margin-top: 22px; color: var(--muted); font-size: 12px; max-width: 90ch; }
+footer p { margin: 4px 0; }
+footer a, .card a { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top">
+  <button type="button" class="brand" id="home-link">Open <span>Imaging Atlas</span></button>
+  <p class="dataset">Anatomy and pathology on real, openly licensed scans · CT, PET-CT, MRI, ultrasound and radiographs</p>
+</header>
+<main id="app"></main>
+<footer id="foot"></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ======================= catalogue ======================= */
+const CATALOG = [
+  { id: 'ct-body', area: 'anatomy', mod: 'CT', title: 'Whole body', sub: 'Contrast-enhanced CT, base of skull to feet', study: 'ct_neg', thumb: 'ct_neg', facts: '107 structures · 2 × 2 × 2.5 mm' },
+  { id: 'xr-body', area: 'anatomy', mod: 'X-ray', title: 'Chest, abdomen and pelvis', sub: 'Radiographs reconstructed from the whole-body CT', study: 'ct_neg', view: 'xray', thumb: 'xray', facts: 'AP and lateral · projected labels' },
+  { id: 'mr-brain', area: 'anatomy', mod: 'MRI', title: 'Brain', sub: 'T1 and T2, ICBM 152 average template', study: 'brain', thumb: 'brain', facts: '100 structures · 1 mm' },
+  { id: 'mr-prostate', area: 'anatomy', mod: 'MRI', title: 'Prostate', sub: 'T2-weighted axial, gland outlined by a radiologist', study: 'prostate', thumb: 'prostate', facts: 'Gland 48 mL · 0.66 × 0.66 × 1.5 mm' },
+  { id: 'us-prostate', area: 'anatomy', mod: 'Ultrasound', title: 'Prostate, transrectal', sub: '3D endocavitary ultrasound volume', study: 'trus', thumb: 'trus', facts: '0.7 mm · unlabelled reading' },
+  { id: 'case-lymphoma', area: 'pathology', mod: 'CT', badge: 'PET-CT', title: 'Lymphoma', sub: 'FDG PET-CT, extensive skeletal disease', study: 'ct_lym', thumb: 'case_lym', facts: '235 segmented lesions · SUVmax 31.5' },
+  { id: 'case-lung', area: 'pathology', mod: 'CT', badge: 'PET-CT', title: 'Lung cancer', sub: 'FDG PET-CT with nodal and bone disease', study: 'ct_lung', thumb: 'case_lung', facts: '67 segmented lesions · SUVmax 12.4' },
+  { id: 'case-prostate', area: 'pathology', mod: 'MRI', title: 'Prostate biopsy target', sub: 'T2 MRI, suspicious lesion targeted at fusion biopsy', study: 'prostate', thumb: 'case_prostate', focus: 2, facts: 'Target 0.9 mL' },
+];
+const MODS = ['All', 'X-ray', 'CT', 'MRI', 'Ultrasound'];
+
+const CASES = {
+  'case-lymphoma': {
+    dx: 'Lymphoma (dataset diagnosis label)',
+    intro: 'FDG PET-CT from a staging or restaging examination. The dataset experts outlined every FDG-avid lesion; this page measures them. Most of the volume sits in the skeleton: the pelvis, spine and proximal femora.',
+    points: [
+      'FDG PET-CT is the reference staging test for FDG-avid lymphomas such as Hodgkin lymphoma and diffuse large B-cell lymphoma (Lugano classification).',
+      'Treatment response is scored with the Deauville five-point scale, which compares residual uptake with the mediastinal blood pool and the liver.',
+      'Focal bone or marrow uptake on PET can show marrow involvement that a CT window alone misses; compare the bone window with the PET overlay here.',
+      'Normal FDG uptake to recognise: brain, myocardium (variable), kidneys and bladder (excretion), bowel and brown fat.',
+    ],
+  },
+  'case-lung': {
+    dx: 'Lung cancer (dataset diagnosis label)',
+    intro: 'FDG PET-CT in a patient with lung cancer. Outlined lesions include a left upper lobe lesion, mediastinal uptake next to the aorta and multiple bone lesions.',
+    points: [
+      'PET-CT is used to stage non-small cell lung cancer, mainly to find nodal (N) and distant (M) disease that changes treatment.',
+      'FDG-avid mediastinal nodes usually need tissue confirmation (EBUS or mediastinoscopy) when the result would change management.',
+      'False positives: infection, inflammation and granulomatous disease. False negatives: lesions under about 8 mm, some adenocarcinomas and carcinoid.',
+      'Common metastatic sites are bone, adrenal glands, liver and brain. FDG assesses the brain poorly because normal cortex is intensely avid.',
+    ],
+  },
+  'case-prostate': {
+    dx: 'Suspicious lesion targeted at MRI/ultrasound fusion biopsy',
+    intro: 'T2-weighted MRI with the gland and the biopsy target outlined by the study radiologist. The biopsy result for this target is not published with the images, so it is not shown here.',
+    points: [
+      'Multiparametric prostate MRI is reported with PI-RADS v2.1. Diffusion is the dominant sequence in the peripheral zone, T2 in the transition zone.',
+      'About 70% of prostate cancers arise in the peripheral zone, which lies posteriorly next to the rectum.',
+      'Cancer on T2 is typically a homogeneous, moderately low-signal area; in the peripheral zone it stands out against the normally bright background.',
+      'Fusion biopsy overlays the MRI target on live transrectal ultrasound, the probe you can explore in the ultrasound module.',
+    ],
+  },
+};
+
+const STUDY_INFO = {
+  ct_neg: { kind: 'ct', note: 'Whole-body contrast-enhanced CT from an FDG PET-CT exam with no lesions found (control case). Organ, vessel, bone and muscle labels were generated with TotalSegmentator, an open segmentation model, so small structures and edges can be imperfect.' },
+  ct_lym: { kind: 'ct' }, ct_lung: { kind: 'ct' },
+  brain: { kind: 'mr', note: 'Population-average brain (ICBM 152 2009c). Labels: FreeSurfer-style segmentation and DKT cortical parcellation distributed with the template.' },
+  prostate: { kind: 'mr', note: 'T2-weighted axial MRI from the Prostate-MRI-US-Biopsy collection. Outlines were drawn by the study radiologist.' },
+  trus: { kind: 'us', note: '3D transrectal ultrasound volume reconstructed by the fusion-biopsy system. The file does not record anatomical orientation, so the planes are named by their relation to the probe. Note the probe at the top of each through-probe plane.' },
+};
+
+const CT_WIN = { 'Soft tissue': [40, 400], 'Lung': [-600, 1500], 'Bone': [400, 1800], 'Liver': [60, 160], 'Mediastinum': [50, 350] };
+const BYTE_WIN = {
+  brain: { t1: { Standard: [30, 265], 'High contrast': [130, 250] }, t2: { Standard: [20, 265], 'High contrast': [80, 210] } },
+  prostate: { t2: { Standard: [0, 240], 'High contrast': [40, 190] } },
+  trus: { us: { Standard: [0, 255], Bright: [0, 170], Dark: [40, 255] } },
+};
+const HEMI = { L: 'Left', R: 'Right', M: 'Midline' };
+const GROUP_HIDDEN = { ct: ['Muscles'], mr: [] };
+const HIDDEN_NAMES = ['Cerebral white matter', 'Extracerebral CSF'];
+
+/* ======================= data loading ======================= */
+const CACHE = {};
+async function decodePart(path, n) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(path + ' ' + res.status);
+  const bmp = await createImageBitmap(await res.blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+  const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+  const ctx = c.getContext('2d', { willReadFrequently: true }); ctx.drawImage(bmp, 0, 0);
+  const px = ctx.getImageData(0, 0, bmp.width, bmp.height).data;
+  const out = new Uint8Array(n);
+  for (let i = 0; i < n; i++) out[i] = px[i * 4];
+  return out;
+}
+async function payload(dir, entry) {
+  const parts = await Promise.all(entry.parts.map((p) => decodePart(dir + '/' + p.file, p.bytes)));
+  const out = new Uint8Array(entry.bytes); let o = 0;
+  for (const p of parts) { out.set(p, o); o += p.length; }
+  let a = 1, b = 0;
+  for (let i = 0; i < out.length; i++) { a = (a + out[i]) % 65521; b = (b + a) % 65521; }
+  if (((b << 16) | a) >>> 0 !== entry.adler32) throw new Error('checksum mismatch in ' + dir);
+  return out;
+}
+async function loadStudy(id, want, progress) {
+  const dir = 'data/' + id;
+  const c = CACHE[id] || (CACHE[id] = { dir, bufs: {} });
+  if (!c.meta) c.meta = await (await fetch(dir + '/meta.json')).json();
+  const need = want.filter((n) => c.meta.files[n] && !c.bufs[n]);
+  let done = 0;
+  await Promise.all(need.map(async (n) => {
+    c.bufs[n] = await payload(dir, c.meta.files[n]);
+    done++; if (progress) progress(done, need.length);
+  }));
+  return c;
+}
+
+/* ======================= routing ======================= */
+const APP = { area: 'anatomy', mod: 'All', entry: null };
+let W = null; // current workspace
+function goHome() { teardown(); APP.entry = null; renderHome(); window.scrollTo(0, 0); }
+function openEntry(e) { teardown(); APP.entry = e; e.view === 'xray' ? openXray(e) : openVolume(e); window.scrollTo(0, 0); }
+$('#home-link').addEventListener('click', goHome);
+function teardown() {
+  if (W && W.dispose) W.dispose();
+  W = null;
+}
+
+function renderHome() {
+  const app = $('#app');
+  const list = CATALOG.filter((e) => e.area === APP.area && (APP.mod === 'All' || e.mod === APP.mod));
+  app.innerHTML = `<section class="home">
+    <div class="areas">
+      <div class="area-tabs" role="group" aria-label="Area">
+        <button type="button" data-a="anatomy" aria-pressed="${APP.area === 'anatomy'}">Anatomy</button>
+        <button type="button" data-a="pathology" aria-pressed="${APP.area === 'pathology'}">Pathology</button>
+      </div>
+      <div class="mods" role="group" aria-label="Modality">${MODS.map((m) => `<button type="button" class="chip" data-m="${m}" aria-pressed="${APP.mod === m}">${m}</button>`).join('')}</div>
+    </div>
+    <p class="intro">${APP.area === 'anatomy'
+      ? 'Pick a region to open it in the reading workspace: linked planes, window presets, labelled structures, a 3D reference and a naming quiz.'
+      : 'Real cases with expert lesion outlines. Each case opens with the lesions measured from the data and a short set of teaching points.'}</p>
+    <div class="cards">${list.length ? list.map((e) => `
+      <button type="button" class="card-s" data-id="${e.id}">
+        <img src="thumbs/${e.thumb}.png" alt="" loading="lazy" width="360" height="360">
+        <span class="body"><span class="badge">${esc(e.badge || e.mod)}</span><h3>${esc(e.title)}</h3><p>${esc(e.sub)}</p><span class="facts">${esc(e.facts)}</span></span>
+      </button>`).join('') : '<p class="empty">Nothing in this modality yet. Try another tab.</p>'}</div>
+  </section>`;
+  app.querySelectorAll('[data-a]').forEach((b) => b.addEventListener('click', () => { APP.area = b.dataset.a; renderHome(); }));
+  app.querySelectorAll('[data-m]').forEach((b) => b.addEventListener('click', () => { APP.mod = b.dataset.m; renderHome(); }));
+  app.querySelectorAll('.card-s').forEach((b) => b.addEventListener('click', () => openEntry(CATALOG.find((e) => e.id === b.dataset.id))));
+}
+
+/* ======================= volume workspace ======================= */
+function openVolume(entry) {
+  const sid = entry.study, info = STUDY_INFO[sid], kind = info.kind;
+  const isCase = entry.area === 'pathology';
+  const hasPet = sid === 'ct_lym' || sid === 'ct_lung';
+  const app = $('#app');
+  app.innerHTML = `
+    <div class="wsbar"><button type="button" class="btn" id="back">← Atlas</button><span class="badge">${esc(entry.badge || entry.mod)}</span><h2>${esc(entry.title)}</h2></div>
+    <div class="toolbar" id="tb" role="toolbar" aria-label="Viewer settings"></div>
+    <div class="layout">
+      <nav class="index" aria-label="Structures"><input type="search" id="search" placeholder="Find a structure…" aria-label="Find a structure"><div class="list" id="list"></div></nav>
+      <section aria-label="Image planes">
+        <div class="films">
+          <div class="pane" data-plane="axial"><canvas></canvas><span class="tag tl"></span><span class="tag br"></span><span class="ori l"></span><span class="ori r"></span><span class="ori t"></span><span class="ori b"></span><div class="loading" id="loading">Loading…</div></div>
+          <div class="pane" data-plane="coronal"><canvas></canvas><span class="tag tl"></span><span class="tag br"></span><span class="ori l"></span><span class="ori r"></span><span class="ori t"></span><span class="ori b"></span></div>
+          <div class="pane" data-plane="sagittal"><canvas></canvas><span class="tag tl"></span><span class="tag br"></span><span class="ori l"></span><span class="ori r"></span><span class="ori t"></span><span class="ori b"></span></div>
+          <div class="pane three" id="pane4"><span class="tag tl" id="p4title">3D</span><div class="pane-ctl" id="p4ctl"></div><span class="tag bl" id="p4hint"></span></div>
+        </div>
+        <p class="hint">Click or drag on a plane to move the crosshair. Scroll on a plane to page through slices. Hover to read a label.</p>
+      </section>
+      <aside class="card" id="card" aria-live="polite"></aside>
+    </div>`;
+  $('#back').addEventListener('click', goHome);
+
+  const S = W = {
+    entry, sid, kind, isCase, hasPet, pos: [0, 0, 0], conv: 'radio', selected: null, lesionSel: null,
+    visible: new Uint8Array(256), quiz: null, score: { right: 0, total: 0 }, fusion: hasPet ? 0.6 : 0, showLesions: true,
+    p4: hasPet ? 'mip' : '3d', opacity: hasPet ? 0 : 0.4, seq: null, win: null, hovered: null, disposed: false, three: null,
+    dispose() { this.disposed = true; if (this.three) this.three.dispose(); if (this.ro) this.ro.disconnect(); },
+  };
+  const want = { ct: ['ct', 'labels', 'meshes'], mr: [], us: ['us'] }[kind].slice();
+  if (sid === 'brain') want.push('t1', 't2', 'labels', 'meshes');
+  if (sid === 'prostate') want.push('t2', 'labels', 'meshes');
+  if (hasPet) want.push('pet', 'lesions', 'lesion_meshes');
+  loadStudy(sid, want, (d, n) => { const l = $('#loading'); if (l) l.textContent = `Loading image data… ${d} of ${n}`; })
+    .then((c) => { if (!S.disposed) startVolume(S, c); })
+    .catch((err) => { console.error(err); const l = $('#loading'); if (l) l.textContent = 'Could not load this study. Go back and open it again.'; });
+}
+
+function startVolume(S, c) {
+  const m = S.meta = c.meta; S.c = c;
+  S.dims = m.dims; S.sp = m.spacing;
+  S.structs = m.structures; S.byId = {}; S.structs.forEach((s) => (S.byId[s.id] = s));
+  const hiddenGroups = GROUP_HIDDEN[S.kind] || [];
+  S.structs.forEach((s) => (S.visible[s.id] = hiddenGroups.includes(s.group) || HIDDEN_NAMES.includes(s.name) ? 0 : 1));
+  S.labels = c.bufs.labels || null;
+  S.lesions = c.bufs.lesions || null;
+  S.pet = c.bufs.pet || null;
+  if (S.kind === 'ct') { S.vol = c.bufs.ct; S.seq = 'ct'; S.win = 'Soft tissue'; S.hu = m.ct_table; }
+  else { S.seq = m.channels[0]; S.vol = c.bufs[S.seq]; S.win = Object.keys(BYTE_WIN[S.sid][S.seq])[0]; }
+  // start position
+  let start = null;
+  if (S.entry.focus) start = S.byId[S.entry.focus];
+  else if (S.sid === 'brain') start = S.structs.find((s) => s.name === 'Hippocampus' && s.hemi === 'L');
+  else if (S.sid === 'ct_neg') start = S.structs.find((s) => s.raw === 'liver');
+  else if (S.sid === 'prostate') start = S.byId[1];
+  if (S.hasPet && m.lesions && m.lesions.length) { S.pos = m.lesions[0].center.slice(); S.lesionSel = m.lesions[0].id; }
+  else if (start) { S.pos = start.center.slice(); S.selected = start.id; }
+  else S.pos = S.dims.map((d) => Math.floor(d / 2));
+  $('#loading').remove();
+  if (S.kind === 'us') { $('.index').hidden = true; $('.layout').classList.add('noindex'); }
+  buildToolbar(S); buildList(S); renderCard(S); setupPanes(S); setupPane4(S);
+  S.ro = new ResizeObserver(() => renderAll(S)); S.ro.observe($('.films'));
+  renderAll(S);
+}
+
+/* ---------- plane geometry (LPS index: i→patient left, j→posterior, k→superior) ---------- */
+function planeDefs(S) {
+  const [nx, ny, nz] = S.dims, [sx, sy, sz] = S.sp;
+  const rad = () => S.conv === 'radio';
+  const us = S.kind === 'us';
+  return {
+    axial: { title: us ? 'C-plane' : 'Axial', axis: 2, w: nx, h: ny, ax: sx, ay: sy,
+      toVox: (c, r) => [rad() ? c : nx - 1 - c, r, S.pos[2]], toPix: (v) => [rad() ? v[0] : nx - 1 - v[0], v[1]],
+      ori: us ? ['', '', '', ''] : [rad() ? 'R' : 'L', rad() ? 'L' : 'R', 'A', 'P'] },
+    coronal: { title: us ? 'Probe plane 1' : 'Coronal', axis: 1, w: nx, h: nz, ax: sx, ay: sz,
+      toVox: (c, r) => [rad() ? c : nx - 1 - c, S.pos[1], nz - 1 - r], toPix: (v) => [rad() ? v[0] : nx - 1 - v[0], nz - 1 - v[2]],
+      ori: us ? ['', '', '', ''] : [rad() ? 'R' : 'L', rad() ? 'L' : 'R', 'S', 'I'] },
+    sagittal: { title: us ? 'Probe plane 2' : 'Sagittal', axis: 0, w: ny, h: nz, ax: sy, ay: sz,
+      toVox: (c, r) => [S.pos[0], c, nz - 1 - r], toPix: (v) => [v[1], nz - 1 - v[2]],
+      ori: us ? ['', '', '', ''] : ['A', 'P', 'S', 'I'] },
+  };
+}
+const idx3 = (S, x, y, z) => x + S.dims[0] * (y + S.dims[1] * z);
+function grayLUT(S) {
+  const lut = new Uint8ClampedArray(256);
+  if (S.kind === 'ct') {
+    const [c, w] = CT_WIN[S.win];
+    for (let v = 0; v < 256; v++) lut[v] = ((S.hu[v] - (c - w / 2)) / w) * 255;
+  } else {
+    const [lo, hi] = BYTE_WIN[S.sid][S.seq][S.win];
+    for (let v = 0; v < 256; v++) lut[v] = ((v - lo) / (hi - lo)) * 255;
+  }
+  return lut;
+}
+function hot(t) { // black-red-yellow-white
+  t = Math.max(0, Math.min(1, t));
+  return [Math.min(255, t * 3 * 255), Math.min(255, Math.max(0, t * 3 - 1) * 255), Math.min(255, Math.max(0, t * 3 - 2) * 255)];
+}
+const HOT = Array.from({ length: 256 }, (_, i) => hot(i / 255));
+
+function renderPlane(S, pane) {
+  const P = S.planes[pane.dataset.plane], { w, h } = P;
+  let o = pane._off;
+  if (!o || o.w !== w || o.h !== h) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    o = pane._off = { c, ctx: c.getContext('2d'), w, h, img: new ImageData(w, h) };
+  }
+  const data = o.img.data, vol = S.vol, lut = S.lut, labels = S.labels, les = S.lesions, pet = S.pet;
+  const a = S.opacity, quizId = S.quiz && !S.quiz.done ? S.quiz.id : null;
+  const sel = quizId || S.selected, lsel = S.lesionSel;
+  const fusion = S.fusion, petMax = S.sid === 'ct_lym' ? 10 : 8, petScale = S.meta.pet_scale || 0.05;
+  const lab = (c, r, arr) => { if (c < 0 || r < 0 || c >= w || r >= h) return -1; const v = P.toVox(c, r); return arr[idx3(S, v[0], v[1], v[2])]; };
+  const byId = S.byId, vis = S.visible;
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < w; c++) {
+      const v = P.toVox(c, r), i = idx3(S, v[0], v[1], v[2]);
+      const g = lut[vol[i]];
+      let R = g, G = g, B = g;
+      if (labels) {
+        const l = labels[i];
+        if (l && sel && l === sel) {
+          const edge = lab(c - 1, r, labels) !== l || lab(c + 1, r, labels) !== l || lab(c, r - 1, labels) !== l || lab(c, r + 1, labels) !== l;
+          if (edge) { R = 255; G = 214; B = 92; }
+          else if (!quizId) { const col = byId[l].color, k = Math.max(a, 0.5); R = g * (1 - k) + col[0] * k; G = g * (1 - k) + col[1] * k; B = g * (1 - k) + col[2] * k; }
+          else { R = g * 0.55 + 115; G = g * 0.55 + 96; B = g * 0.55 + 41; }
+        } else if (l && vis[l] && a > 0 && !quizId) {
+          const col = byId[l].color, k = sel ? a * 0.7 : a;
+          R = g * (1 - k) + col[0] * k; G = g * (1 - k) + col[1] * k; B = g * (1 - k) + col[2] * k;
+        }
+      }
+      if (pet && fusion > 0) {
+        const suv = pet[i] * petScale;
+        if (suv > 1.2) {
+          const t = Math.min(1, suv / petMax), col = HOT[(t * 255) | 0], k = fusion * Math.min(1, (suv - 1.2) / 2.5);
+          R = R * (1 - k) + col[0] * k; G = G * (1 - k) + col[1] * k; B = B * (1 - k) + col[2] * k;
+        }
+      }
+      if (les && S.showLesions) {
+        const l = les[i];
+        if (l) {
+          const edge = lab(c - 1, r, les) !== l || lab(c + 1, r, les) !== l || lab(c, r - 1, les) !== l || lab(c, r + 1, les) !== l;
+          if (edge) { if (l === lsel) { R = 255; G = 255; B = 255; } else { R = 54; G = 224; B = 176; } }
+        }
+      }
+      const p = (r * w + c) * 4; data[p] = R; data[p + 1] = G; data[p + 2] = B; data[p + 3] = 255;
+    }
+  }
+  o.ctx.putImageData(o.img, 0, 0);
+  const cv = pane.querySelector('canvas'), dpr = window.devicePixelRatio || 1;
+  const Wd = Math.round(cv.clientWidth * dpr), Hd = Math.round(cv.clientHeight * dpr);
+  if (cv.width !== Wd || cv.height !== Hd) { cv.width = Wd; cv.height = Hd; }
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, Wd, Hd);
+  const physW = w * P.ax, physH = h * P.ay;
+  const s = Math.min(Wd / physW, Hd / physH) * S.zoom[pane.dataset.plane];
+  const dw = physW * s, dh = physH * s;
+  const [pc, pr] = P.toPix(S.pos);
+  let ox = (Wd - dw) / 2, oy = (Hd - dh) / 2;
+  if (S.zoom[pane.dataset.plane] > 1) { // keep the crosshair in view when zoomed
+    ox = Wd / 2 - (pc + 0.5) * P.ax * s; oy = Hd / 2 - (pr + 0.5) * P.ay * s;
+    ox = Math.min(0, Math.max(Wd - dw, ox)); oy = Math.min(0, Math.max(Hd - dh, oy));
+  }
+  pane._fit = { sx: (P.ax * s) / dpr, sy: (P.ay * s) / dpr, ox: ox / dpr, oy: oy / dpr };
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(o.c, ox, oy, dw, dh);
+  const cx = ox + (pc + 0.5) * P.ax * s, cy = oy + (pr + 0.5) * P.ay * s;
+  ctx.strokeStyle = 'rgba(240,169,46,.75)'; ctx.lineWidth = Math.max(1, dpr);
+  const gap = 9 * dpr;
+  ctx.beginPath();
+  ctx.moveTo(ox, cy); ctx.lineTo(cx - gap, cy); ctx.moveTo(cx + gap, cy); ctx.lineTo(ox + dw, cy);
+  ctx.moveTo(cx, oy); ctx.lineTo(cx, cy - gap); ctx.moveTo(cx, cy + gap); ctx.lineTo(cx, oy + dh);
+  ctx.stroke();
+  pane.querySelector('.tag.tl').textContent = P.title;
+  pane.querySelector('.tag.br').textContent = sliceLabel(S, P.axis);
+  const [l, rr, t, b] = P.ori;
+  pane.querySelector('.ori.l').textContent = l; pane.querySelector('.ori.r').textContent = rr;
+  pane.querySelector('.ori.t').textContent = t; pane.querySelector('.ori.b').textContent = b;
+}
+function worldMM(S, v) {
+  const m = S.meta;
+  if (m.coords === 'mni') { const [nx, ny] = m.mni_dims; return [m.mni_origin[0] + (nx - 1 - v[0]), m.mni_origin[1] + (ny - 1 - v[1]), m.mni_origin[2] + v[2]]; }
+  return v.map((a, i) => m.origin[i] + a * S.sp[i]);
+}
+function sliceLabel(S, axis) {
+  if (S.kind === 'us') return 'slice ' + (S.pos[axis] + 1) + ' / ' + S.dims[axis];
+  const mm = worldMM(S, S.pos)[axis];
+  return 'xyz'[axis] + ' = ' + Math.round(mm) + ' mm';
+}
+function renderAll(S) {
+  if (!S || S.disposed || !S.vol || S.raf) return;
+  S.raf = requestAnimationFrame(() => {
+    S.raf = 0; if (S.disposed) return;
+    S.planes = planeDefs(S); S.lut = grayLUT(S);
+    S.panes.forEach((p) => renderPlane(S, p));
+    updateReadout(S); if (S.p4 === 'mip') renderMIP(S); else update3D(S);
+  });
+}
+
+function setupPanes(S) {
+  S.panes = [...document.querySelectorAll('.pane[data-plane]')];
+  S.planes = planeDefs(S);
+  const tall = (P) => Math.min(6, Math.max(1, (P.h * P.ay) / (P.w * P.ax)));
+  S.zoom = { axial: 1, coronal: tall(S.planes.coronal) > 1.6 ? tall(S.planes.coronal) : 1, sagittal: tall(S.planes.sagittal) > 1.6 ? Math.min(tall(S.planes.sagittal), tall(S.planes.coronal) * 1.2) : 1 };
+  S.zoom0 = { ...S.zoom };
+  S.panes.forEach((pane) => {
+    const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; pane.appendChild(tip);
+    let drag = false;
+    const voxAt = (ev) => {
+      const r = pane.getBoundingClientRect(), f = pane._fit; if (!f) return null;
+      const P = S.planes[pane.dataset.plane];
+      const c = Math.floor((ev.clientX - r.left - f.ox) / f.sx), rr = Math.floor((ev.clientY - r.top - f.oy) / f.sy);
+      if (c < 0 || rr < 0 || c >= P.w || rr >= P.h) return null;
+      return P.toVox(c, rr);
+    };
+    const move = (e) => {
+      const v = voxAt(e); if (!v) return;
+      S.pos = v;
+      if (e.type === 'pointerdown' && !(S.quiz && !S.quiz.done)) {
+        const i = idx3(S, v[0], v[1], v[2]);
+        if (S.lesions && S.showLesions && S.lesions[i]) { S.lesionSel = S.lesions[i]; S.selected = null; renderCard(S); syncLesionRows(S); }
+        else if (S.labels && S.labels[i] && S.visible[S.labels[i]]) select(S, S.labels[i], false);
+      }
+      renderAll(S);
+    };
+    pane.addEventListener('pointerdown', (e) => { drag = true; pane.setPointerCapture(e.pointerId); move(e); });
+    pane.addEventListener('pointerup', () => { drag = false; });
+    pane.addEventListener('pointercancel', () => { drag = false; });
+    pane.addEventListener('pointerleave', () => { tip.hidden = true; S.hovered = null; updateReadout(S); });
+    pane.addEventListener('pointermove', (e) => {
+      if (drag) move(e);
+      const v = voxAt(e); if (!v) { tip.hidden = true; return; }
+      S.hovered = v; updateReadout(S);
+      const i = idx3(S, v[0], v[1], v[2]);
+      let text = '';
+      if (S.lesions && S.showLesions && S.lesions[i]) text = 'Lesion ' + (S.lesions[i] === 61 ? '(small)' : S.lesions[i]);
+      else if (S.labels && S.labels[i] && !(S.quiz && !S.quiz.done)) { const st = S.byId[S.labels[i]]; if (st) text = st.name + (st.hemi !== 'M' ? ' · ' + st.hemi : ''); }
+      if (text && e.pointerType === 'mouse') {
+        tip.textContent = text;
+        const r = pane.getBoundingClientRect(); tip.style.left = (e.clientX - r.left) + 'px'; tip.style.top = (e.clientY - r.top) + 'px';
+        tip.style.transform = e.clientX - r.left > r.width * 0.6 ? 'translate(calc(-100% - 12px), 12px)' : '';
+        tip.hidden = false;
+      } else tip.hidden = true;
+    });
+    pane.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const ax = S.planes[pane.dataset.plane].axis;
+      if (e.ctrlKey || e.metaKey) { const k = pane.dataset.plane; S.zoom[k] = Math.max(1, Math.min(6, S.zoom[k] * (e.deltaY > 0 ? 0.9 : 1.1))); }
+      else S.pos[ax] = Math.max(0, Math.min(S.dims[ax] - 1, S.pos[ax] + (e.deltaY > 0 ? -1 : 1)));
+      renderAll(S);
+    }, { passive: false });
+    pane.addEventListener('dblclick', () => { const k = pane.dataset.plane; S.zoom[k] = S.zoom[k] > 1 ? 1 : Math.max(2.5, S.zoom0[k]); renderAll(S); });
+    pane.tabIndex = 0;
+    pane.addEventListener('keydown', (e) => {
+      const ax = S.planes[pane.dataset.plane].axis;
+      if (e.key === 'ArrowUp' || e.key === 'PageUp') S.pos[ax] = Math.min(S.dims[ax] - 1, S.pos[ax] + 1);
+      else if (e.key === 'ArrowDown' || e.key === 'PageDown') S.pos[ax] = Math.max(0, S.pos[ax] - 1);
+      else return;
+      e.preventDefault(); renderAll(S);
+    });
+  });
+  $('.hint').textContent = 'Click or drag to move the crosshair. Scroll to page through slices; Ctrl + scroll or double-click to zoom. Hover to read a label.';
+}
+
+/* ---------- toolbar ---------- */
+function segHTML(id, opts, cur) { return `<div class="seg" id="${id}">${opts.map((o) => `<button type="button" data-v="${esc(o)}" aria-pressed="${o === cur}">${esc(o)}</button>`).join('')}</div>`; }
+function buildToolbar(S) {
+  const tb = $('#tb'); let h = '';
+  if (S.kind === 'mr' && S.meta.channels.length > 1) h += `<div class="tgroup"><span class="tlabel">Sequence</span>${segHTML('t-seq', S.meta.channels.map((c) => c.toUpperCase()), S.seq.toUpperCase())}</div>`;
+  const wins = S.kind === 'ct' ? Object.keys(CT_WIN) : Object.keys(BYTE_WIN[S.sid][S.seq]);
+  h += `<div class="tgroup"><span class="tlabel">${S.kind === 'us' ? 'Gain' : 'Window'}</span>${segHTML('t-win', wins, S.win)}</div>`;
+  if (S.meta.regions && S.meta.regions.length) h += `<div class="tgroup"><span class="tlabel">Go to</span><div class="seg" id="t-reg">${S.meta.regions.map((r, i) => `<button type="button" data-i="${i}" aria-pressed="false">${esc(r.name)}</button>`).join('')}</div></div>`;
+  if (S.labels) h += `<div class="tgroup"><label class="tlabel" for="t-op">Labels</label><input id="t-op" type="range" min="0" max="100" value="${S.opacity * 100}"></div>`;
+  if (S.hasPet) h += `<div class="tgroup"><label class="tlabel" for="t-pet">PET</label><input id="t-pet" type="range" min="0" max="100" value="${S.fusion * 100}"><label class="check"><input type="checkbox" id="t-les" checked> Lesion outlines</label></div>`;
+  if (S.kind !== 'us') h += `<div class="tgroup"><span class="tlabel">Display</span>${segHTML('t-conv', ['Radiological', 'Neurological'], 'Radiological')}</div>`;
+  if (S.labels && S.structs.length > 4) h += `<button type="button" class="btn primary" id="t-quiz">Quiz me</button>`;
+  tb.innerHTML = h;
+  const seg = (id, fn) => { const el = $('#' + id); if (!el) return; el.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; el.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); fn(b); renderAll(S); }); };
+  seg('t-seq', (b) => { S.seq = b.dataset.v.toLowerCase(); S.vol = S.c.bufs[S.seq]; S.win = Object.keys(BYTE_WIN[S.sid][S.seq]).find((k) => k === S.win) || Object.keys(BYTE_WIN[S.sid][S.seq])[0]; });
+  seg('t-win', (b) => { S.win = b.dataset.v; });
+  seg('t-conv', (b) => { S.conv = b.dataset.v === 'Radiological' ? 'radio' : 'neuro'; });
+  seg('t-reg', (b) => {
+    const r = S.meta.regions[+b.dataset.i]; S.pos[2] = Math.round((r.k0 + r.k1) / 2);
+    if (r.name === 'Thorax' && S.kind === 'ct') { S.win = 'Lung'; syncSeg('t-win', 'Lung'); } else if (S.win === 'Lung') { S.win = 'Soft tissue'; syncSeg('t-win', 'Soft tissue'); }
+    setTimeout(() => b.setAttribute('aria-pressed', 'false'), 400);
+  });
+  const op = $('#t-op'); if (op) op.addEventListener('input', () => { S.opacity = op.value / 100; renderAll(S); });
+  const pet = $('#t-pet'); if (pet) pet.addEventListener('input', () => { S.fusion = pet.value / 100; renderAll(S); });
+  const les = $('#t-les'); if (les) les.addEventListener('change', () => { S.showLesions = les.checked; renderAll(S); });
+  const q = $('#t-quiz'); if (q) q.addEventListener('click', () => { q.textContent = 'New question'; newQuestion(S); });
+}
+function syncSeg(id, v) { const el = $('#' + id); if (el) el.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.v === v))); }
+
+/* ---------- structure dock ---------- */
+function buildList(S) {
+  const list = $('#list'); if (!list) return;
+  list.innerHTML = '';
+  const groups = S.meta.groups.filter((g) => S.structs.some((s) => s.group === g));
+  const nat = (a, b) => (a.order && b.order ? String(a.order).localeCompare(String(b.order), undefined, { numeric: true }) : 0);
+  for (const g of groups) {
+    const items = S.structs.filter((s) => s.group === g).sort((a, b) =>
+      g === 'Spine' ? b.center[2] - a.center[2]
+        : (a.lobe || '').localeCompare(b.lobe || '') || (a.order && b.order ? nat(a, b) : 0) || a.name.localeCompare(b.name, undefined, { numeric: true }) || a.hemi.localeCompare(b.hemi));
+    const sec = document.createElement('section'); sec.dataset.group = g;
+    const head = document.createElement('div'); head.className = 'ghead';
+    head.innerHTML = '<h3></h3><label><input type="checkbox"> Show</label>';
+    head.querySelector('h3').textContent = g;
+    const cb = head.querySelector('input'); cb.id = 'grp-' + g.replace(/\W+/g, '-').toLowerCase();
+    cb.addEventListener('change', () => { items.forEach((s) => (S.visible[s.id] = cb.checked ? 1 : 0)); syncList(S); if (S.onToggle) S.onToggle(); else renderAll(S); });
+    sec.appendChild(head);
+    let sub = null;
+    for (const s of items) {
+      if (s.lobe && s.lobe !== sub) { sub = s.lobe; const h4 = document.createElement('h4'); h4.className = 'sub'; h4.textContent = sub + ' lobe'; sec.appendChild(h4); }
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'item'; b.dataset.id = s.id;
+      b.innerHTML = '<span class="sw"></span><span class="nm"></span><span class="hm"></span>';
+      b.querySelector('.sw').style.background = 'rgb(' + s.color.join(',') + ')';
+      b.querySelector('.nm').textContent = s.name;
+      b.querySelector('.hm').textContent = s.hemi === 'M' ? '' : s.hemi;
+      b.title = s.name + (s.hemi === 'M' ? '' : ' (' + HEMI[s.hemi] + ')');
+      b.addEventListener('click', () => { if (S.onPick) return S.onPick(s.id); if (S.quiz && !S.quiz.done) return; S.visible[s.id] = 1; S.lesionSel = null; select(S, s.id, true); });
+      sec.appendChild(b);
+    }
+    list.appendChild(sec);
+  }
+  syncList(S);
+  $('#search').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    list.querySelectorAll('section').forEach((sec) => {
+      let any = false;
+      sec.querySelectorAll('.item').forEach((b) => {
+        const s = S.byId[+b.dataset.id];
+        const hit = !q || (s.name + ' ' + HEMI[s.hemi] + ' ' + (s.lobe || '') + ' ' + s.group).toLowerCase().includes(q);
+        b.hidden = !hit; any = any || hit;
+      });
+      sec.querySelectorAll('.sub').forEach((h) => { h.hidden = ![...sec.querySelectorAll('.item')].some((b) => !b.hidden && (S.byId[+b.dataset.id].lobe + ' lobe') === h.textContent); });
+      sec.hidden = !any;
+    });
+  });
+}
+function syncList(S) {
+  document.querySelectorAll('#list .item').forEach((b) => {
+    const id = +b.dataset.id;
+    b.classList.toggle('off', !S.visible[id]);
+    b.setAttribute('aria-current', String(id === S.selected));
+  });
+  document.querySelectorAll('#list section').forEach((sec) => {
+    const ids = S.structs.filter((s) => s.group === sec.dataset.group).map((s) => s.id);
+    sec.querySelector('.ghead input').checked = ids.every((i) => S.visible[i]);
+  });
+}
+function select(S, id, goTo) {
+  S.selected = id;
+  if (goTo) S.pos = S.byId[id].center.slice();
+  syncList(S); renderCard(S); renderAll(S);
+  const b = document.querySelector('#list .item[data-id="' + id + '"]');
+  if (b && goTo === false) b.scrollIntoView({ block: 'nearest' });
+}
+
+/* ---------- card ---------- */
+const LOBE = (s) => (s.lobe ? ' · ' + s.lobe + ' lobe' : '');
+function renderCard(S) {
+  const card = $('#card'); if (!card) return;
+  if (S.quiz) return renderQuiz(S);
+  const info = STUDY_INFO[S.sid];
+  let h = '';
+  if (S.isCase) h += caseHTML(S);
+  if (S.kind === 'us') {
+    h += `<div class="eyebrow">Reading guide</div><h2>Transrectal prostate ultrasound</h2>
+      <p class="note">${esc(info.note)}</p>
+      <ul><li>The curved bright line at the top of the probe planes is the rectal wall over the probe face.</li>
+      <li>The prostate is the rounded, mixed-echo organ just beyond the rectal wall. The peripheral zone lies closest to the probe.</li>
+      <li>Echoes weaken with depth, so far structures look darker: that is attenuation, not pathology.</li>
+      <li>Use the C-plane slider (scroll on the C-plane) to move away from the probe face.</li></ul>`;
+  } else if (S.lesionSel && S.meta.lesions) {
+    const l = S.meta.lesions.find((x) => x.id === S.lesionSel);
+    if (l) h += `<div class="eyebrow">Selected lesion</div><h2>Lesion ${l.id}</h2>
+      <dl class="kv"><dt>Volume</dt><dd>${l.ml} mL</dd><dt>SUVmax</dt><dd>${l.suvmax}</dd><dt>Nearest label</dt><dd>${esc(l.near || 'none')}</dd></dl>`;
+    else h += `<div class="eyebrow">Selected lesion</div><h2>Small lesion</h2><p class="small">One of the smaller outlined lesions grouped together.</p>`;
+  } else if (S.selected && S.byId[S.selected]) {
+    const s = S.byId[S.selected];
+    const twin = S.structs.find((o) => o.name === s.name && o.hemi !== s.hemi && o.hemi !== 'M' && s.hemi !== 'M');
+    const c = worldMM(S, s.center).map(Math.round);
+    h += `<div class="eyebrow">${esc(s.group + LOBE(s))}</div><h2>${esc(s.name)}</h2>
+      ${s.note ? `<p class="note">${esc(s.note)}</p>` : ''}
+      <dl class="kv">${s.hemi !== 'M' ? `<dt>Side</dt><dd>${HEMI[s.hemi]}</dd>` : ''}<dt>Volume</dt><dd>${s.ml >= 10 ? s.ml.toFixed(0) : s.ml.toFixed(1)} mL</dd><dt>Centre</dt><dd>${c.join(', ')} mm</dd></dl>
+      <div class="actions"><button type="button" class="btn" id="c-go">Centre on it</button>${twin ? `<button type="button" class="btn" id="c-twin">${HEMI[twin.hemi]} side</button>` : ''}</div>`;
+    setTimeout(() => {
+      const g = $('#c-go'); if (g) g.addEventListener('click', () => select(S, s.id, true));
+      const t = $('#c-twin'); if (t) t.addEventListener('click', () => { S.visible[twin.id] = 1; select(S, twin.id, true); });
+    });
+  } else if (!S.isCase) {
+    h += `<p class="note">Pick a structure from the list or click a plane.</p>`;
+  }
+  if (!S.isCase && info.note && S.kind !== 'us') h += `<p class="small">${esc(info.note)}</p>`;
+  h += `<div class="readout" id="readout"></div>`;
+  card.innerHTML = h;
+  if (S.isCase) wireCase(S);
+  updateReadout(S);
+}
+function caseHTML(S) {
+  const C = CASES[S.entry.id], m = S.meta;
+  let h = `<div class="eyebrow">Case</div><h2>${esc(S.entry.title)}</h2><p class="note">${esc(C.intro)}</p>
+    <dl class="kv"><dt>Diagnosis</dt><dd style="font-family:inherit">${esc(C.dx)}</dd>`;
+  if (m.patient) h += `<dt>Patient</dt><dd>${parseInt(m.patient.age, 10)} y · ${m.patient.sex === 'M' ? 'male' : 'female'} · ${m.patient.weight_kg} kg</dd>`;
+  if (m.lesion_summary) h += `<dt>Lesions</dt><dd>${m.lesion_summary.count}</dd><dt>Total volume</dt><dd>${m.lesion_summary.total_ml} mL</dd><dt>SUVmax</dt><dd>${m.lesion_summary.suvmax}</dd>`;
+  if (S.sid === 'prostate') { const g = S.byId[1], t = S.byId[2]; h += `<dt>Gland volume</dt><dd>${g.ml.toFixed(0)} mL</dd><dt>Target volume</dt><dd>${t.ml.toFixed(1)} mL</dd>`; }
+  h += `</dl>`;
+  if (m.lesions) {
+    h += `<h4>Largest lesions</h4><div class="scroll"><table class="ltable"><thead><tr><th>#</th><th>Nearest label</th><th class="n">mL</th><th class="n">SUVmax</th></tr></thead><tbody>${m.lesions.slice(0, 25).map((l) =>
+      `<tr data-l="${l.id}" aria-current="${l.id === S.lesionSel}" tabindex="0"><td>${l.id}</td><td>${esc(l.near || '—')}</td><td class="n">${l.ml}</td><td class="n">${l.suvmax}</td></tr>`).join('')}</tbody></table></div>
+      <p class="small">Lesions were outlined by the dataset's experts. Volumes and SUVmax are measured on the native PET grid; "nearest label" is the automatically segmented structure the lesion touches.</p>`;
+  }
+  h += `<h4>Teaching points</h4><ul>${C.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`;
+  return h;
+}
+function wireCase(S) {
+  document.querySelectorAll('.ltable tr[data-l]').forEach((tr) => {
+    const go = () => { const l = S.meta.lesions.find((x) => x.id === +tr.dataset.l); S.lesionSel = l.id; S.selected = null; S.pos = l.center.slice(); syncList(S); renderCard(S); renderAll(S); };
+    tr.addEventListener('click', go);
+    tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+  });
+}
+function syncLesionRows(S) { document.querySelectorAll('.ltable tr[data-l]').forEach((tr) => tr.setAttribute('aria-current', String(+tr.dataset.l === S.lesionSel))); }
+function updateReadout(S) {
+  const el = $('#readout'); if (!el || !S.vol) return;
+  const v = S.hovered || S.pos, i = idx3(S, v[0], v[1], v[2]);
+  const mm = worldMM(S, v).map(Math.round);
+  let line2 = [];
+  if (S.kind === 'ct') line2.push('≈ ' + Math.round(S.hu[S.vol[i]]) + ' HU');
+  if (S.pet) line2.push('SUV ' + (S.pet[i] * S.meta.pet_scale).toFixed(1));
+  const hideName = S.quiz && !S.quiz.done;
+  if (S.labels && !hideName) { const l = S.labels[i]; line2.push(l && S.byId[l] ? S.byId[l].name + (S.byId[l].hemi !== 'M' ? ' (' + S.byId[l].hemi + ')' : '') : 'unlabelled'); }
+  const coordName = S.meta.coords === 'mni' ? 'MNI' : (S.kind === 'us' ? 'volume' : 'scanner');
+  el.innerHTML = (S.hovered ? 'Cursor' : 'Crosshair') + ' <b></b> <span class="small"></span><br><span class="l2"></span>';
+  el.querySelector('b').textContent = S.kind === 'us' ? v.map((a, k) => (a * S.sp[k]).toFixed(0)).join(', ') + ' mm' : mm.join(', ') + ' mm';
+  el.querySelector('.small').textContent = '(' + coordName + ')';
+  el.querySelector('.l2').textContent = line2.join(' · ');
+}
+
+/* ---------- quiz ---------- */
+function newQuestion(S) {
+  const pool = S.structs.filter((s) => s.voxels > (S.kind === 'ct' ? 250 : 400) && !HIDDEN_NAMES.includes(s.name) && s.group !== 'Lesions');
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  const names = [...new Set(pool.map((s) => s.name))].filter((n) => n !== t.name);
+  const same = names.filter((n) => pool.find((s) => s.name === n).group === t.group);
+  const src = same.length >= 3 ? same : names, pick = [];
+  while (pick.length < Math.min(3, src.length)) { const n = src[Math.floor(Math.random() * src.length)]; if (!pick.includes(n)) pick.push(n); }
+  S.quiz = { id: t.id, options: [...pick, t.name].sort(() => Math.random() - 0.5), done: false };
+  S.lesionSel = null; S.pos = t.center.slice(); renderCard(S); renderAll(S);
+}
+function renderQuiz(S) {
+  const q = S.quiz, s = S.byId[q.id], card = $('#card');
+  card.innerHTML = `<div class="eyebrow">Quiz</div><h2>Name the outlined structure</h2>
+    <p class="note">The crosshair sits inside it on all three planes. Scroll through the slices if you need more context.</p>
+    <div class="quiz"><div class="choices"></div><p class="note" id="verdict" hidden></p></div>
+    <div class="actions"><button type="button" class="btn primary" id="q-next" hidden>Next structure</button><button type="button" class="btn" id="q-stop">End quiz</button></div>
+    <p class="score" id="q-score"></p><div class="readout" id="readout"></div>`;
+  const box = card.querySelector('.choices');
+  const score = () => { $('#q-score').textContent = S.score.total ? S.score.right + ' of ' + S.score.total + ' correct this session' : ''; };
+  q.options.forEach((n) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = n;
+    b.addEventListener('click', () => {
+      if (q.done) return;
+      q.done = true; S.score.total++; const ok = n === s.name; if (ok) S.score.right++;
+      box.querySelectorAll('button').forEach((x) => { x.disabled = true; if (x.textContent === s.name) x.classList.add('right'); });
+      if (!ok) b.classList.add('wrong');
+      const v = $('#verdict'); v.hidden = false;
+      v.textContent = (ok ? 'Correct. ' : 'It is the ' + s.name.toLowerCase() + (s.hemi !== 'M' ? ' (' + HEMI[s.hemi].toLowerCase() + ')' : '') + '. ') + (s.note || '');
+      $('#q-next').hidden = false; $('#q-next').focus();
+      score(); S.selected = s.id; syncList(S); renderAll(S);
+    });
+    box.appendChild(b);
+  });
+  $('#q-next').addEventListener('click', () => newQuestion(S));
+  $('#q-stop').addEventListener('click', () => { S.quiz = null; const qb = $('#t-quiz'); if (qb) qb.textContent = 'Quiz me'; renderCard(S); renderAll(S); });
+  score(); updateReadout(S);
+}
+
+/* ---------- fourth pane: 3D or PET MIP ---------- */
+function setupPane4(S) {
+  const ctl = $('#p4ctl'); let h = '';
+  if (S.kind === 'us') { $('#pane4').hidden = true; $('.films').style.gridTemplateColumns = ''; return; }
+  if (S.hasPet) h += segHTML('p4-mode', ['MIP', '3D'], S.p4 === 'mip' ? 'MIP' : '3D');
+  if (S.c.meta.files.meshes && S.sid === 'brain') h += '<label for="p4-shell">Cortex</label><input id="p4-shell" type="range" min="0" max="100" value="100">';
+  ctl.innerHTML = h;
+  const mode = $('#p4-mode');
+  if (mode) mode.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    mode.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    S.p4 = b.dataset.v === 'MIP' ? 'mip' : '3d'; showP4(S);
+  });
+  const sh = $('#p4-shell'); if (sh) sh.addEventListener('input', () => update3D(S));
+  showP4(S);
+}
+function showP4(S) {
+  const pane = $('#pane4');
+  if (S.p4 === 'mip') {
+    if (S.three) S.three.canvas.hidden = true;
+    let cv = pane.querySelector('canvas.mip');
+    if (!cv) {
+      cv = document.createElement('canvas'); cv.className = 'mip'; pane.insertBefore(cv, pane.firstChild);
+      cv.addEventListener('pointerdown', (e) => { // click: jump to the hottest voxel along that ray
+        const f = S.mipFit; if (!f) return;
+        const r = cv.getBoundingClientRect();
+        const c = Math.floor((e.clientX - r.left - f.ox) / f.sx), rr = Math.floor((e.clientY - r.top - f.oy) / f.sy);
+        const [nx, ny, nz] = S.dims; if (c < 0 || rr < 0 || c >= nx || rr >= nz) return;
+        const i = S.conv === 'radio' ? c : nx - 1 - c, k = nz - 1 - rr;
+        let best = 0, bj = S.pos[1];
+        for (let j = 0; j < ny; j++) { const v = S.pet[idx3(S, i, j, k)]; if (v > best) { best = v; bj = j; } }
+        S.pos = [i, bj, k]; renderAll(S);
+      });
+    }
+    cv.hidden = false;
+    $('#p4title').textContent = 'PET MIP (anterior)'; $('#p4hint').textContent = 'Click a hot spot to jump to it';
+    pane.classList.remove('three');
+    renderMIP(S);
+  } else {
+    const m = pane.querySelector('canvas.mip'); if (m) m.hidden = true;
+    pane.classList.add('three');
+    $('#p4title').textContent = '3D'; $('#p4hint').textContent = 'Drag to rotate · scroll to zoom · click to pick';
+    if (!S.three) init3D(S); else { S.three.canvas.hidden = false; S.three.size(); update3D(S); }
+  }
+}
+function renderMIP(S) {
+  const cv = $('#pane4 canvas.mip'); if (!cv || cv.hidden || !S.pet) return;
+  const [nx, ny, nz] = S.dims;
+  if (!S.mip) {
+    const mip = new Uint8Array(nx * nz);
+    for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) { const base = nx * (j + ny * k); for (let i = 0; i < nx; i++) { const v = S.pet[base + i]; const o = k * nx + i; if (v > mip[o]) mip[o] = v; } }
+    S.mip = mip;
+  }
+  const off = document.createElement('canvas'); off.width = nx; off.height = nz;
+  const octx = off.getContext('2d'), img = octx.createImageData(nx, nz);
+  const max = 6 / S.meta.pet_scale;
+  for (let r = 0; r < nz; r++) for (let c = 0; c < nx; c++) {
+    const i = S.conv === 'radio' ? c : nx - 1 - c, v = S.mip[(nz - 1 - r) * nx + i];
+    const g = 255 - Math.min(255, (v / max) * 255), p = (r * nx + c) * 4;
+    img.data[p] = g; img.data[p + 1] = g; img.data[p + 2] = g; img.data[p + 3] = 255;
+  }
+  octx.putImageData(img, 0, 0);
+  const dpr = window.devicePixelRatio || 1, Wd = Math.round(cv.clientWidth * dpr), Hd = Math.round(cv.clientHeight * dpr);
+  if (cv.width !== Wd || cv.height !== Hd) { cv.width = Wd; cv.height = Hd; }
+  const ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, Wd, Hd);
+  const pw = nx * S.sp[0], ph = nz * S.sp[2], s = Math.min(Wd / pw, Hd / ph), dw = pw * s, dh = ph * s, ox = (Wd - dw) / 2, oy = (Hd - dh) / 2;
+  ctx.imageSmoothingEnabled = true; ctx.drawImage(off, ox, oy, dw, dh);
+  S.mipFit = { sx: (S.sp[0] * s) / dpr, sy: (S.sp[2] * s) / dpr, ox: ox / dpr, oy: oy / dpr };
+  const pc = S.conv === 'radio' ? S.pos[0] : nx - 1 - S.pos[0], pr = nz - 1 - S.pos[2];
+  const cx = ox + (pc + 0.5) * S.sp[0] * s, cy = oy + (pr + 0.5) * S.sp[2] * s;
+  ctx.strokeStyle = 'rgba(240,169,46,.9)'; ctx.lineWidth = 1.5 * dpr; ctx.beginPath(); ctx.arc(cx, cy, 7 * dpr, 0, Math.PI * 2); ctx.stroke();
+}
+
+function parseMeshes(buf) {
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let p = 0; const n = dv.getUint32(p, true); p += 4; const out = [];
+  for (let k = 0; k < n; k++) {
+    const id = dv.getUint8(p), isz = dv.getUint8(p + 1), nv = dv.getUint32(p + 2, true), nf = dv.getUint32(p + 6, true); p += 10;
+    const pos = new Float32Array(nv * 3);
+    for (let i = 0; i < nv * 3; i++) pos[i] = dv.getUint16(p + i * 2, true) / 16;
+    p += nv * 6;
+    const ind = new Uint32Array(nf * 3);
+    if (isz === 2) { for (let i = 0; i < nf * 3; i++) ind[i] = dv.getUint16(p + i * 2, true); p += nf * 6; if ((nf * 6) % 4) p += 2; }
+    else { for (let i = 0; i < nf * 3; i++) ind[i] = dv.getUint32(p + i * 4, true); p += nf * 12; }
+    let vl = null; if (id === 0) { vl = buf.slice(p, p + nv); p += nv; }
+    out.push({ id, pos, ind, vl });
+  }
+  return out;
+}
+function init3D(S) {
+  const pane = $('#pane4');
+  if (!window.THREE) { pane.insertAdjacentHTML('beforeend', '<div class="loading">3D view unavailable</div>'); return; }
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio || 1); renderer.setClearColor(0x000000, 1);
+  pane.insertBefore(renderer.domElement, pane.firstChild);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, 1, 1, 8000); camera.up.set(0, 0, 1);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  const key = new THREE.DirectionalLight(0xffffff, 0.75); camera.add(key); key.position.set(0.4, 0.6, 1); scene.add(camera);
+  const ext = S.dims.map((d, i) => d * S.sp[i]);
+  const root = new THREE.Group(); root.position.set(-ext[0] / 2, -ext[1] / 2, -ext[2] / 2); scene.add(root);
+  const meshes = []; let shell = null;
+  const add = (list, isLesion) => {
+    for (const m of list) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(m.pos, 3));
+      geo.setIndex(new THREE.BufferAttribute(m.ind, 1)); geo.computeVertexNormals();
+      if (m.id === 0 && m.vl) {
+        geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(m.pos.length), 3));
+        shell = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); shell.userData = { vl: m.vl }; root.add(shell);
+      } else {
+        const col = isLesion ? [255, 90, 50] : S.byId[m.id] ? S.byId[m.id].color : [200, 200, 200];
+        const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(col[0] / 255, col[1] / 255, col[2] / 255), emissive: isLesion ? 0x401000 : 0x000000 });
+        const mesh = new THREE.Mesh(geo, mat); mesh.userData = { id: m.id, lesion: isLesion }; root.add(mesh); meshes.push(mesh);
+      }
+    }
+  };
+  add(parseMeshes(S.c.bufs.meshes), false);
+  if (S.c.bufs.lesion_meshes) add(parseMeshes(S.c.bufs.lesion_meshes), true);
+  const marker = new THREE.Mesh(new THREE.SphereGeometry(Math.max(2.2, ext[2] / 120), 16, 12), new THREE.MeshBasicMaterial({ color: 0xf0a92e, depthTest: false }));
+  marker.renderOrder = 5; root.add(marker);
+  const isBody = S.kind === 'ct';
+  const view = { theta: isBody ? -Math.PI / 2 + 0.35 : -0.6, phi: isBody ? 0.12 : 0.3, dist: Math.max(...ext) * (isBody ? 2.1 : 2.4) };
+  const place = () => { const { theta, phi, dist } = view; camera.position.set(dist * Math.cos(phi) * Math.cos(theta), dist * Math.cos(phi) * Math.sin(theta), dist * Math.sin(phi)); camera.lookAt(0, 0, 0); };
+  const size = () => { const w = pane.clientWidth, h = pane.clientHeight; renderer.setSize(w, h, false); renderer.domElement.style.width = '100%'; renderer.domElement.style.height = '100%'; camera.aspect = w / h; camera.updateProjectionMatrix(); };
+  const draw = () => { place(); renderer.render(scene, camera); };
+  const cv = renderer.domElement; let down = null;
+  cv.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: view.theta, p: view.phi, moved: false }; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing'; });
+  cv.addEventListener('pointermove', (e) => { if (!down) return; const dx = e.clientX - down.x, dy = e.clientY - down.y; if (Math.abs(dx) + Math.abs(dy) > 4) down.moved = true; view.theta = down.t - dx * 0.01; view.phi = Math.max(-1.45, Math.min(1.45, down.p + dy * 0.01)); draw(); });
+  cv.addEventListener('pointerup', (e) => { cv.style.cursor = ''; if (down && !down.moved) pick(e); down = null; });
+  cv.addEventListener('wheel', (e) => { e.preventDefault(); view.dist = Math.max(Math.max(...ext) * 0.5, Math.min(Math.max(...ext) * 5, view.dist * (e.deltaY > 0 ? 1.08 : 0.93))); draw(); }, { passive: false });
+  const ray = new THREE.Raycaster();
+  function pick(e) {
+    if (S.quiz && !S.quiz.done) return;
+    const r = cv.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+    const targets = meshes.filter((x) => x.visible); if (shell && shell.visible && shell.material.opacity > 0.5) targets.push(shell);
+    const hit = ray.intersectObjects(targets, false)[0]; if (!hit) return;
+    const pt = hit.point.clone(); root.worldToLocal(pt);
+    const v = [Math.round(pt.x / S.sp[0]), Math.round(pt.y / S.sp[1]), Math.round(pt.z / S.sp[2])].map((a, i) => Math.max(0, Math.min(S.dims[i] - 1, a)));
+    S.pos = v;
+    if (hit.object === shell) { const lab = shell.userData.vl[hit.face.a]; if (lab) { S.visible[lab] = 1; select(S, lab, false); } }
+    else if (hit.object.userData.lesion) { S.lesionSel = hit.object.userData.id; S.selected = null; renderCard(S); }
+    else select(S, hit.object.userData.id, false);
+    renderAll(S);
+  }
+  const ro = new ResizeObserver(() => { size(); draw(); }); ro.observe(pane);
+  S.three = { canvas: cv, meshes, shell, marker, draw, size, dispose: () => { ro.disconnect(); renderer.dispose(); renderer.forceContextLoss && renderer.forceContextLoss(); } };
+  size(); update3D(S);
+}
+function update3D(S) {
+  if (!S.three || S.p4 !== '3d') return;
+  const { meshes, shell, marker } = S.three;
+  const quizId = S.quiz && !S.quiz.done ? S.quiz.id : null, sel = quizId || S.selected;
+  meshes.forEach((m) => {
+    const id = m.userData.id;
+    if (m.userData.lesion) { m.visible = S.showLesions; m.material.emissive.setHex(id === S.lesionSel ? 0xffffff : 0x401000); return; }
+    m.visible = !!S.visible[id] || id === sel;
+    m.material.emissive.setHex(id === sel ? 0x6a5000 : 0x000000);
+    const c = quizId && id !== sel ? [150, 150, 150] : S.byId[id].color;
+    m.material.color.setRGB(c[0] / 255, c[1] / 255, c[2] / 255);
+    if (S.hasPet || (S.byId[id] && S.structs.some((x) => x.group === 'Lesions') && S.byId[id].group !== 'Lesions')) { m.material.transparent = true; m.material.opacity = id === sel ? 0.9 : 0.3; m.material.depthWrite = false; }
+  });
+  if (shell) {
+    const sl = $('#p4-shell'), op = sl ? sl.value / 100 : 1;
+    const vl = shell.userData.vl, col = shell.geometry.attributes.color.array;
+    const selCtx = sel && S.byId[sel] && S.byId[sel].group === 'Cerebral cortex';
+    for (let i = 0; i < vl.length; i++) {
+      const l = vl[i], s = S.byId[l];
+      let c = s && S.visible[l] && !quizId ? s.color : [205, 196, 186], k = 1;
+      if (selCtx && l !== sel) k = 0.45;
+      if (selCtx && l === sel) c = quizId ? [255, 214, 92] : s.color;
+      col[i * 3] = (c[0] / 255) * k + (1 - k) * 0.55; col[i * 3 + 1] = (c[1] / 255) * k + (1 - k) * 0.55; col[i * 3 + 2] = (c[2] / 255) * k + (1 - k) * 0.55;
+    }
+    shell.geometry.attributes.color.needsUpdate = true;
+    shell.visible = op > 0.02; shell.material.transparent = op < 0.99; shell.material.opacity = op; shell.material.depthWrite = op >= 0.99; shell.material.needsUpdate = true;
+  }
+  marker.position.set(S.pos[0] * S.sp[0], S.pos[1] * S.sp[1], S.pos[2] * S.sp[2]);
+  S.three.draw();
+}
+
+/* ======================= X-ray workspace ======================= */
+function openXray(entry) {
+  const app = $('#app');
+  app.innerHTML = `
+    <div class="wsbar"><button type="button" class="btn" id="back">← Atlas</button><span class="badge">X-ray</span><h2>${esc(entry.title)}</h2></div>
+    <div class="toolbar" role="toolbar" aria-label="Radiograph settings">
+      <div class="tgroup"><span class="tlabel">View</span>${segHTML('x-view', ['AP', 'Lateral'], 'AP')}</div>
+      <div class="tgroup"><span class="tlabel">Region</span>${segHTML('x-reg', ['Chest', 'Abdomen', 'Pelvis', 'Full length'], 'Chest')}</div>
+      <div class="tgroup"><label class="tlabel" for="x-op">Labels</label><input id="x-op" type="range" min="0" max="100" value="0"></div>
+    </div>
+    <div class="layout">
+      <nav class="index" aria-label="Structures"><input type="search" id="search" placeholder="Find a structure…" aria-label="Find a structure"><div class="list" id="list"></div></nav>
+      <section aria-label="Radiograph"><div class="films single"><div class="pane" id="xpane"><canvas></canvas><span class="tag tl" id="xtitle"></span><span class="ori l" id="xl"></span><span class="ori r" id="xr"></span><div class="loading" id="loading">Loading…</div></div></div>
+        <p class="hint">Hover to name the structure that dominates each ray. Click to select it; its projected outline is drawn in yellow.</p></section>
+      <aside class="card" id="card" aria-live="polite"></aside>
+    </div>`;
+  $('#back').addEventListener('click', goHome);
+  const X = W = { entry, view: 'ap', region: 'Chest', opacity: 0, selected: null, disposed: false, visible: new Uint8Array(256), dispose() { this.disposed = true; if (this.ro) this.ro.disconnect(); } };
+  loadStudy('ct_neg', ['xr_ap', 'xr_lat', 'xr_ap_lab', 'xr_lat_lab'], (d, n) => { const l = $('#loading'); if (l) l.textContent = `Loading… ${d} of ${n}`; })
+    .then((c) => { if (!X.disposed) startXray(X, c); })
+    .catch((e) => { console.error(e); const l = $('#loading'); if (l) l.textContent = 'Could not load the radiographs. Go back and open them again.'; });
+}
+function startXray(X, c) {
+  const m = X.meta = c.meta; X.c = c;
+  X.structs = m.structures; X.byId = {}; X.structs.forEach((s) => (X.byId[s.id] = s));
+  const present = new Set([...c.bufs.xr_ap_lab, ...c.bufs.xr_lat_lab]);
+  X.list = X.structs.filter((s) => present.has(s.id));
+  X.list.forEach((s) => (X.visible[s.id] = 1));
+  $('#loading').remove();
+  // reuse the dock
+  const fake = { meta: { groups: m.groups }, structs: X.list, byId: X.byId, visible: X.visible, selected: null };
+  X.dock = fake;
+  fake.onPick = (id) => { X.selected = id; fake.selected = id; syncList(fake); renderXCard(X); drawX(X); };
+  fake.onToggle = () => drawX(X);
+  buildList(fake);
+  const seg = (id, fn) => { const el = $('#' + id); el.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; el.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); fn(b.dataset.v); X.contrast = null; drawX(X); }); };
+  seg('x-view', (v) => (X.view = v === 'AP' ? 'ap' : 'lat'));
+  seg('x-reg', (v) => (X.region = v));
+  $('#x-op').addEventListener('input', (e) => { X.opacity = e.target.value / 100; drawX(X); });
+  const pane = $('#xpane'), tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; pane.appendChild(tip);
+  const at = (e) => { const f = X.fit; if (!f) return -1; const r = pane.getBoundingClientRect(); const c2 = Math.floor((e.clientX - r.left - f.ox) / f.sx), r2 = Math.floor((e.clientY - r.top - f.oy) / f.sy); if (c2 < 0 || r2 < 0 || c2 >= f.w || r2 >= f.h) return -1; return X.lab[(f.k1 - r2) * f.W + c2]; };
+  pane.addEventListener('pointermove', (e) => {
+    const l = at(e);
+    if (l > 0 && X.byId[l] && e.pointerType === 'mouse') { const s = X.byId[l]; tip.textContent = s.name + (s.hemi !== 'M' ? ' · ' + s.hemi : ''); const r = pane.getBoundingClientRect(); tip.style.left = (e.clientX - r.left) + 'px'; tip.style.top = (e.clientY - r.top) + 'px'; tip.style.transform = e.clientX - r.left > r.width * 0.6 ? 'translate(calc(-100% - 12px), 12px)' : ''; tip.hidden = false; }
+    else tip.hidden = true;
+  });
+  pane.addEventListener('pointerleave', () => (tip.hidden = true));
+  pane.addEventListener('pointerdown', (e) => { const l = at(e); if (l > 0) { X.selected = l; fake.selected = l; syncList(fake); renderXCard(X); drawX(X); const b = document.querySelector('#list .item[data-id="' + l + '"]'); if (b) b.scrollIntoView({ block: 'nearest' }); } });
+  X.ro = new ResizeObserver(() => drawX(X)); X.ro.observe($('.films'));
+  X.selected = (X.list.find((s) => s.raw === 'heart') || X.list[0]).id; fake.selected = X.selected; syncList(fake);
+  renderXCard(X); drawX(X);
+}
+function drawX(X) {
+  if (X.disposed || !X.c) return;
+  const m = X.meta, info = m.xray[X.view], Wd0 = info.w, H0 = info.h;
+  const img = X.c.bufs['xr_' + X.view], lab = X.lab = X.c.bufs['xr_' + X.view + '_lab'];
+  const reg = {}; m.regions.forEach((r) => (reg[r.name] = r));
+  let k0 = 0, k1 = H0 - 1;
+  if (X.region === 'Chest' && reg.Thorax) { k0 = reg.Thorax.k0 - 12; k1 = reg.Thorax.k1 + 4; }
+  if (X.region === 'Abdomen' && reg.Abdomen) { k0 = reg.Abdomen.k0 - 30; k1 = reg.Abdomen.k1 + 10; }
+  if (X.region === 'Pelvis' && reg.Pelvis) { k0 = reg.Pelvis.k0 - 10; k1 = reg.Pelvis.k1 + 20; }
+  k0 = Math.max(0, k0); k1 = Math.min(H0 - 1, k1);
+  const h = k1 - k0 + 1, w = Wd0;
+  if (!X.contrast) { // percentiles inside the crop
+    const hist = new Uint32Array(256); for (let k = k0; k <= k1; k++) for (let i = 0; i < w; i++) hist[img[k * w + i]]++;
+    const total = h * w; let acc = 0, lo = 0, hi = 255;
+    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc < total * 0.02) lo = v; if (acc < total * 0.997) hi = v; }
+    X.contrast = [lo, Math.max(lo + 10, hi)];
+  }
+  const [lo, hi] = X.contrast;
+  const off = document.createElement('canvas'); off.width = w; off.height = h;
+  const octx = off.getContext('2d'), id = octx.createImageData(w, h), sel = X.selected;
+  for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
+    const k = k1 - r, i = k * w + c;
+    let g = Math.pow(Math.max(0, Math.min(1, (img[i] - lo) / (hi - lo))), 1.3) * 255, R = g, G = g, B = g;
+    const l = lab[i];
+    if (l && l === sel) {
+      const e = (cc, kk) => (cc < 0 || cc >= w || kk < k0 || kk > k1 ? -1 : lab[kk * w + cc]);
+      if (e(c - 1, k) !== l || e(c + 1, k) !== l || e(c, k - 1) !== l || e(c, k + 1) !== l) { R = 255; G = 214; B = 92; }
+      else { const col = X.byId[l].color, a = Math.max(0.25, X.opacity); R = g * (1 - a) + col[0] * a; G = g * (1 - a) + col[1] * a; B = g * (1 - a) + col[2] * a; }
+    } else if (l && X.opacity > 0 && X.visible[l]) { const col = X.byId[l].color, a = X.opacity * 0.8; R = g * (1 - a) + col[0] * a; G = g * (1 - a) + col[1] * a; B = g * (1 - a) + col[2] * a; }
+    const p = (r * w + c) * 4; id.data[p] = R; id.data[p + 1] = G; id.data[p + 2] = B; id.data[p + 3] = 255;
+  }
+  octx.putImageData(id, 0, 0);
+  const cv = $('#xpane canvas'), dpr = window.devicePixelRatio || 1, Wd = Math.round(cv.clientWidth * dpr), Hd = Math.round(cv.clientHeight * dpr);
+  if (cv.width !== Wd || cv.height !== Hd) { cv.width = Wd; cv.height = Hd; }
+  const ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, Wd, Hd);
+  const ax = X.view === 'ap' ? m.spacing[0] : m.spacing[1], ay = m.spacing[2];
+  const s = Math.min(Wd / (w * ax), Hd / (h * ay)), dw = w * ax * s, dh = h * ay * s, ox = (Wd - dw) / 2, oy = (Hd - dh) / 2;
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(off, ox, oy, dw, dh);
+  X.fit = { sx: (ax * s) / dpr, sy: (ay * s) / dpr, ox: ox / dpr, oy: oy / dpr, w, h, W: w, k1 };
+  $('#xtitle').textContent = (X.view === 'ap' ? 'AP' : 'Lateral') + ' · ' + X.region;
+  $('#xl').textContent = X.view === 'ap' ? 'R' : 'A'; $('#xr').textContent = X.view === 'ap' ? 'L' : 'P';
+}
+function renderXCard(X) {
+  const s = X.byId[X.selected], card = $('#card');
+  card.innerHTML = `<div class="eyebrow">${esc(s.group)}</div><h2>${esc(s.name)}${s.hemi !== 'M' ? ' <span class="small">(' + HEMI[s.hemi].toLowerCase() + ')</span>' : ''}</h2>
+    ${s.note ? `<p class="note">${esc(s.note)}</p>` : ''}
+    <div class="actions"><button type="button" class="btn" id="x-ct">Show it on CT</button></div>
+    <p class="small">These radiographs are computed from the whole-body CT by summing X-ray attenuation along each ray (a digitally reconstructed radiograph). Overlapping organs add up, just as on a real film; each pixel is labelled with the structure that contributes most along that ray.</p>`;
+  $('#x-ct').addEventListener('click', () => {
+    const e = CATALOG.find((x) => x.id === 'ct-body'); openEntry(e);
+    const wait = () => { if (W && W.vol && W.byId && W.byId[s.id]) { W.visible[s.id] = 1; select(W, s.id, true); } else if (W && !W.disposed) setTimeout(wait, 150); };
+    wait();
+  });
+}
+
+/* ======================= footer ======================= */
+$('#foot').innerHTML = `
+  <p><b>Sources.</b> Whole-body CT and PET-CT cases: FDG-PET-CT-Lesions collection (Gatidis et al.), lesion outlines by the collection's experts, CC BY 4.0. Prostate MRI, outlines and transrectal ultrasound: Prostate-MRI-US-Biopsy collection (Natarajan et al.), CC BY 4.0. Both retrieved from the NCI <a href="https://portal.imaging.datacommons.cancer.gov" target="_blank" rel="noopener">Imaging Data Commons</a>. Brain: ICBM 2009c Nonlinear Asymmetric template (Fonov et al.), © 1993–2004 Louis Collins, McConnell Brain Imaging Centre, MNI, McGill University, distributed with permission to use, copy, modify and distribute; retrieved from <a href="https://www.templateflow.org" target="_blank" rel="noopener">TemplateFlow</a>.</p>
+  <p><b>Labels.</b> CT organ, vessel, bone and muscle labels were generated for this atlas with TotalSegmentator (Wasserthal et al., Radiology: AI 2023) at 3 mm and resampled; they are automatic, not reviewed by a radiologist. Radiographs are computed from the CT. Teaching notes are general and are not a substitute for a textbook or clinical guideline.</p>
+  <p>For learning only. Not for clinical use.</p>`;
+
+renderHome();
+})();
+</script>
